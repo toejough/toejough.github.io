@@ -41,15 +41,15 @@
 				filled up with a grab bag of instructions &mdash; coding standards, project conventions, things I'd
 				corrected more than once. Some stale, some project-specific, all piling up.</p>
 
-			<p>Even with things written down, it was still annoying. I had to remind Claude to capture the right instructions, and managing them was its own chore. Every new session had a different idea of what to write and where to put it. Sometimes Claude would deduplicate, sometimes not. Stale instructions layered in next to contradictory ones, and CLAUDE.md was getting large enough for context poisoning &mdash; the instructions were starting to make things <em>less</em> effective rather than more.</p>
+			<p>I started extracting parts out into skills. Sometimes that was valuable, sometimes it was overkill. And writing good skills is a ... skill ... in itself. Every new session had a different idea of what to capture and where to put it. Sometimes Claude would deduplicate, sometimes not. Stale instructions layered in next to contradictory ones, and CLAUDE.md was getting large enough for context poisoning &mdash; the instructions were starting to make things <em>less</em> effective rather than more.</p>
 
-			<p>I could sort of see what was and wasn't working, but I was losing track of what I was even asking Claude to do as the file grew in a disorganized fashion. Some instructions were months old and probably stale. Some were so generic they matched everything and helped nothing. And a few were actively counterproductive &mdash; surfacing constantly but getting ignored every time, burning context on advice the model had learned to tune out.</p>
+			<p>I wanted a memory system that wasn't overwhelming the context window, that automatically picked up on corrections and important patterns and things worth remembering.</p>
 
-			<p>I was maintaining a growing pile of instructions with no feedback signal. It felt like writing tests that never run.</p>
+			<p>So that's what I built. Along the way I kept fixing problems through trial and error &mdash; adding features I thought were useful, pulling them back as the system got too complex. I'm still in that churn, but it's working well enough at this point that it felt like a decent time to share it.</p>
 
 			<h2>What I wanted</h2>
 
-			<p>I wanted a memory system that could answer basic questions about itself:</p>
+			<p>Beyond the basics, I wanted a memory system that could answer questions about itself:</p>
 
 			<ul>
 				<li>Which memories are actually being followed when they surface?</li>
@@ -64,7 +64,7 @@
 
 			<p>A closed feedback loop. Learn, measure, fix, repeat.</p>
 
-			<h2>What I built</h2>
+			<h2>What I have so far</h2>
 
 			<p><a href="https://github.com/toejough/engram">Engram</a> is a Claude Code plugin that hooks into every
 				phase of a session:</p>
@@ -121,17 +121,13 @@
 				proposes system-level tuning &mdash; not just "fix this memory" but "stop using this keyword for
 				extraction because it causes too many false positives." The system is learning how to learn better.</p>
 
-			<h2>How it compares to built-in memory</h2>
+			<h2>What about built-in memory?</h2>
 
-			<p>Claude Code now has built-in memory and dreaming features. Those are great for general preferences and
-				project context &mdash; zero setup, just works.</p>
+			<p>Anthropic has introduced built-in auto-memory and dreaming features for Claude Code. Memory is definitely one of the primary problems that needs solving, and lots of smart people are working on it.</p>
 
-			<p>Engram is for a different use case: instructions where you want accountability. Did the agent actually
-				follow this? If not, why? Is this instruction helping or just burning context tokens? Built-in memory
-				stores what you tell it. Engram measures whether what you stored is working, and fixes it when it isn't.
-			</p>
+			<p>I tried auto-memory when it was introduced and found it unhelpful for the same reasons I'd had trouble with "please write this down somewhere" &mdash; non-deterministic recording, unreliable surfacing. I ended up turning it off because it was conflicting with engram. I haven't tried the new dreaming features yet &mdash; maybe they've materially improved things.</p>
 
-			<p>They're complementary. I use both.</p>
+			<p>If the built-in memory management becomes good enough that most of engram is unnecessary, I'll be glad &mdash; less for me to maintain. Till then, I'm going to keep plugging away at this.</p>
 
 			<h2>Where it's at</h2>
 
