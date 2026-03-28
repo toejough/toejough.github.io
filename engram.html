@@ -41,7 +41,7 @@
 				filled up with a grab bag of instructions &mdash; coding standards, project conventions, things I'd
 				corrected more than once. Some stale, some project-specific, all piling up.</p>
 
-			<p>I started extracting parts out into skills. Sometimes that was valuable, sometimes it was overkill. And writing good skills is a ... skill ... in itself. Every new session had a different idea of what to capture and where to put it. Sometimes Claude would deduplicate, sometimes not. Stale instructions layered in next to contradictory ones, and CLAUDE.md was getting large enough for context poisoning &mdash; the instructions were starting to make things <em>less</em> effective rather than more.</p>
+			<p>Every new session had a different idea of what to capture and where to put it. Sometimes Claude would deduplicate, sometimes not. Stale instructions layered in next to contradictory ones, and CLAUDE.md was getting large enough for context poisoning &mdash; the instructions were starting to make things <em>less</em> effective rather than more. I started extracting parts out into skills. Sometimes that was valuable, sometimes it was overkill. And writing good skills is a ... skill ... in itself.</p>
 
 			<p>I wanted a memory system that wasn't overwhelming the context window, that automatically picked up on corrections and important patterns and things worth remembering.</p>
 
@@ -49,20 +49,11 @@
 
 			<h2>What I wanted</h2>
 
-			<p>Beyond the basics, I wanted a memory system that could answer questions about itself:</p>
+			<p>Beyond the basics, I wanted it to be self-correcting &mdash; but keep the user in control. It should track what's working and what isn't, diagnose problems, and propose fixes. But never apply changes without asking first.</p>
 
-			<ul>
-				<li>Which memories are actually being followed when they surface?</li>
-				<li>Which ones get ignored every time?</li>
-				<li>Which ones are great but never match anything?</li>
-				<li>Which ones should just be deleted?</li>
-			</ul>
+			<p>Rewrite a confusing instruction. Broaden the keywords on a hidden gem. Remove noise. Escalate enforcement on something that keeps getting violated. All proposed, all reviewed by me before taking effect.</p>
 
-			<p>And then I wanted it to <em>do something about the answers</em>. Not just report &mdash; diagnose and
-				propose fixes. Rewrite a confusing instruction. Broaden the keywords on a hidden gem. Remove noise.
-				Escalate enforcement on something that keeps getting violated.</p>
-
-			<p>A closed feedback loop. Learn, measure, fix, repeat.</p>
+			<p>A closed feedback loop. Learn, measure, propose, fix. Repeat.</p>
 
 			<h2>What I have so far</h2>
 
