@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Engram: Self-Correcting Memory for LLM Agents</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="description" content="Why I built a memory system that measures whether its own instructions actually work.">
+    <meta property="og:title" content="Engram: Self-Correcting Memory for LLM Agents">
+    <meta property="og:description" content="Why I built a memory system that measures whether its own instructions actually work.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://toejough.github.io/engram">
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Engram</h1>
+        <p>Self-correcting memory for LLM agents</p>
+
+        <p class="view"><a href="https://github.com/toejough/engram">View on GitHub</a></p>
+        <p class="view"><a href="https://toejough.github.io">Back to Projects</a></p>
+      </header>
+      <section>
+
+<h1>I Built a Memory System That Grades Its Own Homework</h1>
+
+<p><em>March 2026</em></p>
+
+<h2>The problem I kept running into</h2>
+
+<p>I use Claude Code every day. Over time, I accumulated a lot of instructions for it &mdash; coding standards, project conventions, things I'd corrected more than once. CLAUDE.md files, rules, skills. The usual.</p>
+
+<p>The problem wasn't capturing instructions. Claude Code is good at that. The problem was that I had no idea which ones were actually working.</p>
+
+<p>Some instructions I'd written months ago were probably stale. Some were so generic they matched everything and helped nothing. Some were genuinely good but had keywords so narrow they almost never surfaced. And a few were actively counterproductive &mdash; surfacing constantly but getting ignored every time, wasting context budget on advice the model had learned to tune out.</p>
+
+<p>I was maintaining a growing pile of instructions with no feedback signal. It felt like writing tests that never run.</p>
+
+<h2>What I wanted</h2>
+
+<p>I wanted a memory system that could answer basic questions about itself:</p>
+
+<ul>
+  <li>Which memories are actually being followed when they surface?</li>
+  <li>Which ones get ignored every time?</li>
+  <li>Which ones are great but never match anything?</li>
+  <li>Which ones should just be deleted?</li>
+</ul>
+
+<p>And then I wanted it to <em>do something about the answers</em>. Not just report &mdash; diagnose and propose fixes. Rewrite a confusing instruction. Broaden the keywords on a hidden gem. Remove noise. Escalate enforcement on something that keeps getting violated.</p>
+
+<p>A closed feedback loop. Learn, measure, fix, repeat.</p>
+
+<h2>What I built</h2>
+
+<p><a href="https://github.com/toejough/engram">Engram</a> is a Claude Code plugin that hooks into every phase of a session:</p>
+
+<ol>
+  <li><strong>Extract</strong> &mdash; learns from corrections and session transcripts, deduplicates against what it already knows</li>
+  <li><strong>Surface</strong> &mdash; retrieves relevant memories at each prompt via keyword matching, with a token budget so it doesn't overwhelm the model</li>
+  <li><strong>Evaluate</strong> &mdash; tracks whether surfaced memories were followed, contradicted, or ignored</li>
+  <li><strong>Maintain</strong> &mdash; diagnoses each memory by effectiveness and proposes targeted fixes</li>
+</ol>
+
+<p>Every memory gets classified into one of four quadrants based on how often it surfaces and how often it's followed:</p>
+
+<table>
+  <tr><th></th><th>High effectiveness</th><th>Low effectiveness</th></tr>
+  <tr><td><strong>Often surfaced</strong></td><td>Working &mdash; keep</td><td>Leech &mdash; rewrite or escalate</td></tr>
+  <tr><td><strong>Rarely surfaced</strong></td><td>Hidden gem &mdash; broaden keywords</td><td>Noise &mdash; remove</td></tr>
+</table>
+
+<p>The system also proposes its own improvements. When it notices that a keyword like "toml" causes irrelevant matches 93% of the time, it proposes de-prioritizing that keyword for future extractions. When it finds near-duplicate memories, it proposes consolidating them. All proposals go through user review before taking effect.</p>
+
+<h2>What it's like to use</h2>
+
+<p>In practice, I start a session and engram reminds me I can say <code>/recall</code> to load context from my last session. When I type a prompt, relevant memories surface inline. When the agent finishes, I get a quick triage summary if there are maintenance signals.</p>
+
+<p>Periodically I run <code>/memory-triage</code> and spend a few minutes reviewing what engram has found: "these 6 memories are noise &mdash; remove all?", "this memory has 100% effectiveness but only surfaced twice &mdash; broaden keywords?". It takes a few minutes and the corpus gets noticeably better each time.</p>
+
+<p>The part that surprised me most was the adaptation pipeline. Engram watches its own feedback patterns and proposes system-level tuning &mdash; not just "fix this memory" but "stop using this keyword for extraction because it causes too many false positives." The system is learning how to learn better.</p>
+
+<h2>How it compares to built-in memory</h2>
+
+<p>Claude Code now has built-in memory and dreaming features. Those are great for general preferences and project context &mdash; zero setup, just works.</p>
+
+<p>Engram is for a different use case: instructions where you want accountability. Did the agent actually follow this? If not, why? Is this instruction helping or just burning context tokens? Built-in memory stores what you tell it. Engram measures whether what you stored is working, and fixes it when it isn't.</p>
+
+<p>They're complementary. I use both.</p>
+
+<h2>Where it's at</h2>
+
+<p>Engram is alpha. I've been using it daily for a few weeks and it's been genuinely useful, but APIs and data formats may still change. It's written in pure Go with no CGO dependencies, uses TF-IDF and BM25 for text matching, and calls the Anthropic API only for LLM-dependent operations like classification and extraction.</p>
+
+<p>The whole thing is open source: <a href="https://github.com/toejough/engram">github.com/toejough/engram</a></p>
+
+<p>If you use Claude Code and have opinions about how memory should work for LLM agents, I'd love to hear from you. <a href="https://github.com/toejough/engram/issues">Issues</a> and feedback are welcome.</p>
+
+      </section>
+      <footer>
+        <p><small>Hosted on GitHub Pages</small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+  </body>
+</html>
