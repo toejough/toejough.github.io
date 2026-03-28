@@ -35,17 +35,17 @@
 
 			<h2>The problem I kept running into</h2>
 
-			<p>I use Claude Code every day. Early on, I'd say things like "remember that" or "never do X" and Claude would respond with "good call, I'll remember that for next time" &mdash; and then promptly forget. So I started saying "write that down somewhere," then "write that down in CLAUDE.md." Over time, CLAUDE.md filled up with a grab bag of instructions &mdash; coding standards, project conventions, things I'd corrected more than once. Some stale, some project-specific, all piling up.</p>
+			<p>I use Claude Code every day. Early on, I'd say things like "remember that" or "never do X" and Claude
+				would respond with "good call, I'll remember that for next time" &mdash; and then promptly forget. So I
+				started saying "write that down somewhere," then "write that down in CLAUDE.md." Over time, CLAUDE.md
+				filled up with a grab bag of instructions &mdash; coding standards, project conventions, things I'd
+				corrected more than once. Some stale, some project-specific, all piling up.</p>
 
-			<p>Capturing instructions wasn't the hard part anymore. The problem was that I had no idea which ones were actually working.</p>
+			<p>Even with things written down, it was still annoying. I had to remind Claude to capture the right instructions, and managing them was its own chore. Every new session had a different idea of what to write and where to put it. Sometimes Claude would deduplicate, sometimes not. Stale instructions layered in next to contradictory ones, and CLAUDE.md was getting large enough for context poisoning &mdash; the instructions were starting to make things <em>less</em> effective rather than more.</p>
 
-			<p>Some instructions I'd written months ago were probably stale. Some were so generic they matched
-				everything and helped nothing. Some were genuinely good but had keywords so narrow they almost never
-				surfaced. And a few were actively counterproductive &mdash; surfacing constantly but getting ignored
-				every time, wasting context budget on advice the model had learned to tune out.</p>
+			<p>I could sort of see what was and wasn't working, but I was losing track of what I was even asking Claude to do as the file grew in a disorganized fashion. Some instructions were months old and probably stale. Some were so generic they matched everything and helped nothing. And a few were actively counterproductive &mdash; surfacing constantly but getting ignored every time, burning context on advice the model had learned to tune out.</p>
 
-			<p>I was maintaining a growing pile of instructions with no feedback signal. It felt like writing tests that
-				never run.</p>
+			<p>I was maintaining a growing pile of instructions with no feedback signal. It felt like writing tests that never run.</p>
 
 			<h2>What I wanted</h2>
 
