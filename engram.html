@@ -68,7 +68,9 @@
 		header {
 			width: auto;
 			float: none;
-			position: relative;
+			position: sticky;
+			z-index: 100;
+			/* top set by JS: -(top padding) so content hits top then freezes */
 			padding: 80px 40px 60px;
 			border-bottom: none;
 			background:
@@ -157,9 +159,10 @@
 		/* ── Article title ── */
 		.article-header {
 			position: sticky;
-			top: 0;
+			top: var(--header-h, 0px);
 			z-index: 90;
-			padding: 32px 0 20px;
+			padding: 32px 40px 20px;
+			margin: 0 -40px;
 			background: var(--bg-deep);
 			border-bottom: 1px solid var(--border);
 		}
@@ -194,11 +197,11 @@
 		.article-section h2 {
 			position: sticky;
 			z-index: 80;
-			top: var(--article-title-h);
+			top: calc(var(--header-h, 0px) + var(--article-title-h));
 			color: var(--teal);
 			font-size: 22px;
-			margin: 0;
-			padding: 24px 0 12px;
+			margin: 0 -40px;
+			padding: 24px 40px 12px;
 			background: var(--bg-deep);
 			border-bottom: 1px solid var(--border);
 			letter-spacing: -0.5px;
@@ -565,10 +568,19 @@
 	</div>
 
 	<script>
-		// Measure article title height for sticky h2 offset
+		// Measure header and article title for sticky cascade
 		function setStickyOffsets() {
 			const root = document.documentElement;
+			const header = document.querySelector('header');
 			const articleHeader = document.querySelector('.article-header');
+
+			// Header top padding = space to scroll off before freezing
+			const topPad = parseFloat(getComputedStyle(header).paddingTop);
+			header.style.top = `-${topPad}px`;
+
+			// Visible header height after sticking
+			const visibleH = header.offsetHeight - topPad;
+			root.style.setProperty('--header-h', `${visibleH}px`);
 			root.style.setProperty('--article-title-h', `${articleHeader.offsetHeight}px`);
 		}
 
