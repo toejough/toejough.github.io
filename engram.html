@@ -74,8 +74,8 @@
 			padding: 80px 40px 60px;
 			border-bottom: none;
 			background:
-				radial-gradient(ellipse 80% 60% at 20% 40%, var(--teal-dim) 0%, transparent 70%),
-				radial-gradient(ellipse 60% 50% at 80% 30%, var(--magenta-dim) 0%, transparent 70%),
+				radial-gradient(ellipse 80% 60% at var(--aurora-x1, 20%) var(--aurora-y1, 40%), var(--teal-dim) 0%, transparent 70%),
+				radial-gradient(ellipse 60% 50% at var(--aurora-x2, 80%) var(--aurora-y2, 30%), var(--magenta-dim) 0%, transparent 70%),
 				linear-gradient(180deg, #08080e 0%, var(--bg-deep) 100%);
 			overflow: hidden;
 		}
@@ -611,6 +611,22 @@
 		}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
 		document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+		// Aurora scroll — shift gradient blobs as user scrolls
+		const headerEl = document.querySelector('header');
+		window.addEventListener('scroll', () => {
+			const s = window.scrollY;
+			// Teal blob drifts right and up as you scroll
+			const x1 = 20 + Math.sin(s * 0.003) * 15 + s * 0.02;
+			const y1 = 40 + Math.cos(s * 0.004) * 10 - s * 0.01;
+			// Magenta blob drifts left and down
+			const x2 = 80 - Math.sin(s * 0.002 + 1) * 12 - s * 0.015;
+			const y2 = 30 + Math.sin(s * 0.005) * 8 + s * 0.008;
+			headerEl.style.setProperty('--aurora-x1', `${x1}%`);
+			headerEl.style.setProperty('--aurora-y1', `${y1}%`);
+			headerEl.style.setProperty('--aurora-x2', `${x2}%`);
+			headerEl.style.setProperty('--aurora-y2', `${y2}%`);
+		}, { passive: true });
 	</script>
 	<script src="javascripts/scale.fix.js"></script>
 </body>
