@@ -163,7 +163,6 @@
 			z-index: 200;
 			padding: 8px 0 12px;
 			background: transparent;
-			border-bottom: 1px solid var(--border);
 		}
 
 		/* Full-width background strip */
@@ -173,17 +172,7 @@
 			top: 0; bottom: 0;
 			left: -9999px; right: -9999px;
 			background: var(--bg-deep);
-			border-bottom: inherit;
 			z-index: -1;
-		}
-
-		.article-header::after {
-			content: "";
-			position: absolute;
-			bottom: -20px; left: -9999px; right: -9999px;
-			height: 20px;
-			background: linear-gradient(180deg, var(--bg-deep) 0%, transparent 100%);
-			pointer-events: none;
 		}
 
 		.article-header h1 {
