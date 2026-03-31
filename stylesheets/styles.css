@@ -1,10 +1,9 @@
-@import url(https://fonts.googleapis.com/css?family=Lato:300italic,700italic,300,700);
 
 body {
   padding:50px;
-  font:14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color:#777;
-  font-weight:300;
+  font:16px/1.6 "SF Mono", Menlo, Monaco, "Cascadia Code", "Consolas", "Liberation Mono", "Courier New", monospace;
+  color:#494949;
+  font-weight:400;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -33,14 +32,14 @@ h3, h4, h5, h6 {
 }
 
 a {
-  color:#39c;
+  color:#0969da;
   font-weight:400;
   text-decoration:none;
 }
 
 a small {
   font-size:11px;
-  color:#777;
+  color:#595959;
   margin-top:-0.6em;
   display:block;
 }
@@ -131,7 +130,7 @@ header li {
 header ul a {
   line-height:1;
   font-size:11px;
-  color:#999;
+  color:#595959;
   display:block;
   text-align:center;
   padding-top:6px;

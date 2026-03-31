@@ -16,6 +16,412 @@
 		content="How I built a memory plugin that helps Claude Code retain corrections, surface relevant context, and improve over time.">
 	<meta property="og:type" content="article">
 	<meta property="og:url" content="https://toejough.github.io/engram">
+	<style>
+		:root {
+			--teal: #00d4aa;
+			--teal-dim: #00a88660;
+			--magenta: #c850c0;
+			--magenta-dim: #c850c040;
+			--green: #34d058;
+			--amber: #e0a860;
+			--bg-deep: #0a0a0f;
+			--bg-raised: #1a1a24;
+			--bg-surface: #22222e;
+			--text: #c8c8d0;
+			--text-bright: #e8e8f0;
+			--text-dim: #777788;
+			--border: #2a2a38;
+			--header-h: 0px;
+			--article-title-h: 0px;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			background: var(--bg-deep);
+			color: var(--text);
+			padding: 0;
+			margin: 0;
+			overflow-x: hidden;
+		}
+
+		/* ── Grain overlay ── */
+		body::after {
+			content: "";
+			position: fixed;
+			top: 0; left: 0; right: 0; bottom: 0;
+			background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+			pointer-events: none;
+			z-index: 9999;
+		}
+
+		.wrapper {
+			width: auto;
+			max-width: 100%;
+			margin: 0;
+			display: flex;
+			flex-direction: column;
+			min-height: 100vh;
+		}
+
+		/* ── Header with gradient ── */
+		header {
+			width: auto;
+			float: none;
+			position: relative;
+			padding: 80px 40px 60px;
+			border-bottom: none;
+			background:
+				radial-gradient(ellipse 80% 60% at 20% 40%, var(--teal-dim) 0%, transparent 70%),
+				radial-gradient(ellipse 60% 50% at 80% 30%, var(--magenta-dim) 0%, transparent 70%),
+				linear-gradient(180deg, #08080e 0%, var(--bg-deep) 100%);
+			overflow: hidden;
+		}
+
+		header::before {
+			content: "";
+			position: absolute;
+			top: -50%; left: -50%;
+			width: 200%; height: 200%;
+			background:
+				radial-gradient(circle at 30% 50%, rgba(0, 212, 170, 0.08) 0%, transparent 50%),
+				radial-gradient(circle at 70% 30%, rgba(200, 80, 192, 0.06) 0%, transparent 50%);
+			animation: meshDrift 20s ease-in-out infinite alternate;
+			pointer-events: none;
+		}
+
+		header::after {
+			content: "";
+			position: absolute;
+			top: 0; left: 0; right: 0; bottom: 0;
+			background-image:
+				linear-gradient(var(--border) 1px, transparent 1px),
+				linear-gradient(90deg, var(--border) 1px, transparent 1px);
+			background-size: 60px 60px;
+			opacity: 0.15;
+			mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 40%, transparent 100%);
+			-webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 40%, transparent 100%);
+			pointer-events: none;
+		}
+
+		@keyframes meshDrift {
+			0% { transform: translate(0, 0) rotate(0deg); }
+			100% { transform: translate(3%, -2%) rotate(3deg); }
+		}
+
+		header h1 {
+			position: relative;
+			color: var(--text-bright);
+			font-size: 56px;
+			letter-spacing: -2px;
+			margin-bottom: 12px;
+			background: linear-gradient(135deg, var(--text-bright) 0%, var(--teal) 100%);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			background-clip: text;
+		}
+
+		header > p {
+			position: relative;
+			color: var(--text-dim);
+			font-size: 15px;
+			margin-bottom: 6px;
+		}
+
+		header .view {
+			position: relative;
+			display: inline-block;
+			margin-right: 24px;
+		}
+
+		header .view a {
+			color: var(--teal);
+			font-size: 13px;
+			text-decoration: none;
+			border-bottom: 1px solid transparent;
+			transition: border-color 0.3s, text-shadow 0.3s;
+		}
+
+		header .view a:hover {
+			border-bottom-color: var(--teal);
+			text-shadow: 0 0 12px var(--teal-dim);
+		}
+
+		/* ── Content section ── */
+		article {
+			max-width: 720px;
+			padding: 0 40px;
+			margin: 0 auto;
+		}
+
+		/* ── Article title ── */
+		.article-header {
+			position: sticky;
+			top: 0;
+			z-index: 90;
+			padding: 32px 0 20px;
+			background: var(--bg-deep);
+			border-bottom: 1px solid var(--border);
+		}
+
+		.article-header::after {
+			content: "";
+			position: absolute;
+			bottom: -20px; left: 0; right: 0;
+			height: 20px;
+			background: linear-gradient(180deg, var(--bg-deep) 0%, transparent 100%);
+			pointer-events: none;
+		}
+
+		.article-header h1 {
+			color: var(--text-bright);
+			font-size: 32px;
+			margin-bottom: 6px;
+			line-height: 1.25;
+		}
+
+		.article-header .dateline {
+			color: var(--text-dim);
+			font-size: 14px;
+			margin: 0;
+		}
+
+		/* ── Sections — h2 sticks below title ── */
+		.article-section {
+			padding-bottom: 8px;
+		}
+
+		.article-section h2 {
+			position: sticky;
+			z-index: 80;
+			top: var(--article-title-h);
+			color: var(--teal);
+			font-size: 22px;
+			margin: 0;
+			padding: 24px 0 12px;
+			background: var(--bg-deep);
+			border-bottom: 1px solid var(--border);
+			letter-spacing: -0.5px;
+		}
+
+		.article-section h2::after {
+			content: "";
+			position: absolute;
+			bottom: -16px; left: 0; right: 0;
+			height: 16px;
+			background: linear-gradient(180deg, var(--bg-deep) 0%, transparent 100%);
+			pointer-events: none;
+		}
+
+		.section-content {
+			padding-top: 28px;
+			padding-bottom: 16px;
+		}
+
+		/* ── Scroll reveals ── */
+		.reveal {
+			opacity: 0;
+			transform: translateY(24px);
+			transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+		}
+
+		.reveal.visible {
+			opacity: 1;
+			transform: translateY(0);
+		}
+
+		/* ── Typography ── */
+		p {
+			line-height: 1.75;
+			margin-bottom: 24px;
+		}
+
+		a {
+			color: var(--teal);
+			text-decoration: none;
+			border-bottom: 1px solid transparent;
+			transition: border-color 0.3s, text-shadow 0.3s;
+		}
+
+		a:hover {
+			border-bottom-color: var(--teal);
+			text-shadow: 0 0 8px var(--teal-dim);
+		}
+
+		strong {
+			color: var(--text-bright);
+		}
+
+		em {
+			color: #aaaabc;
+		}
+
+		ol {
+			padding-left: 24px;
+			margin-bottom: 28px;
+		}
+
+		ol li {
+			margin-bottom: 14px;
+			line-height: 1.75;
+			padding-left: 8px;
+		}
+
+		ol li strong {
+			color: var(--teal);
+		}
+
+		code {
+			font-family: inherit;
+			font-size: inherit;
+			color: var(--amber);
+			background: var(--bg-raised);
+			padding: 2px 8px;
+			border-radius: 4px;
+			border: 1px solid var(--border);
+		}
+
+		/* ── Callout ── */
+		.callout {
+			background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-surface) 100%);
+			border: 1px solid var(--border);
+			border-left: 3px solid var(--magenta);
+			border-radius: 6px;
+			padding: 24px 28px;
+			margin: 32px 0;
+			font-size: 15px;
+			line-height: 1.7;
+			color: var(--text-bright);
+			letter-spacing: 0.2px;
+		}
+
+		/* ── Quadrant table ── */
+		table {
+			width: 100%;
+			border-collapse: separate;
+			border-spacing: 0;
+			margin: 28px 0 36px;
+			border-radius: 8px;
+			overflow: hidden;
+			border: 1px solid var(--border);
+			box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+		}
+
+		th {
+			color: var(--text-dim);
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			padding: 14px 18px;
+			border-bottom: 1px solid var(--border);
+			background: var(--bg-deep);
+		}
+
+		td {
+			padding: 16px 18px;
+			border-bottom: 1px solid var(--border);
+			color: var(--text);
+			position: relative;
+		}
+
+		tr:nth-child(2) td:nth-child(2) {
+			background: rgba(52, 208, 88, 0.08);
+			border-left: 3px solid var(--green);
+		}
+
+		tr:nth-child(2) td:nth-child(3) {
+			background: rgba(200, 80, 192, 0.08);
+			border-left: 3px solid var(--magenta);
+		}
+
+		tr:nth-child(3) td:nth-child(2) {
+			background: rgba(0, 212, 170, 0.08);
+			border-left: 3px solid var(--teal);
+		}
+
+		tr:nth-child(3) td:nth-child(3) {
+			background: rgba(224, 168, 96, 0.08);
+			border-left: 3px solid var(--amber);
+		}
+
+		tr:last-child td {
+			border-bottom: none;
+		}
+
+		/* ── Footer ── */
+		footer {
+			width: auto;
+			float: none;
+			position: static;
+			padding: 40px;
+			border-top: 1px solid var(--border);
+			text-align: center;
+			background: var(--bg-deep);
+		}
+
+		footer small {
+			color: var(--text-dim);
+			font-size: 12px;
+		}
+
+		/* ── Responsive ── */
+		@media screen and (max-width: 720px) {
+			header {
+				padding: 48px 24px 36px;
+			}
+
+			header h1 {
+				font-size: 36px;
+			}
+
+			article {
+				padding: 0 24px;
+			}
+
+			.article-header {
+				padding: 24px 0 16px;
+			}
+
+			.article-header h1 {
+				font-size: 26px;
+			}
+
+			.article-section h2 {
+				font-size: 20px;
+			}
+
+			table {
+				font-size: 14px;
+			}
+		}
+
+		/* ── Print ── */
+		@media print {
+			body {
+				background: #fff;
+				color: #333;
+			}
+			body::after { display: none; }
+			header {
+				background: none;
+				border-bottom: 2px solid #ccc;
+			}
+			header::before, header::after { display: none; }
+			header h1 {
+				-webkit-text-fill-color: #111;
+				background: none;
+			}
+			.article-header { position: static; background: #fff; }
+			.article-header h1 { color: #111; }
+			.article-section h2 { position: static; background: #fff; color: #1a7a60; }
+			a { color: #0969da; }
+			strong { color: #111; }
+			table { box-shadow: none; border-color: #ccc; }
+			th { background: #f5f5f5; color: #333; }
+			td { color: #444; }
+			.reveal { opacity: 1; transform: none; }
+		}
+	</style>
 </head>
 
 <body>
@@ -27,117 +433,161 @@
 			<p class="view"><a href="https://github.com/toejough/engram">View on GitHub</a></p>
 			<p class="view"><a href="https://toejough.github.io">Back to Projects</a></p>
 		</header>
-		<section>
 
-			<h1>Getting Claude to Learn and Remember</h1>
+		<article>
+			<div class="article-header">
+				<h1>Getting Claude to Learn and Remember</h1>
+				<p class="dateline">March 2026</p>
+			</div>
 
-			<p><em>March 2026</em></p>
+			<div class="article-section">
+				<h2>The problem I kept running into</h2>
+				<div class="section-content reveal">
+					<p>I use Claude Code every day. Early on, I'd say things like "remember that" or "never do X" and Claude
+						would respond with "good call, I'll remember that for next time" &mdash; and then promptly forget. So I
+						started saying "write that down somewhere," then "write that down in CLAUDE.md." Over time, CLAUDE.md
+						filled up with a grab bag of instructions &mdash; coding standards, project conventions, things I'd
+						corrected more than once. Some stale, some project-specific, all piling up.</p>
 
-			<h2>The problem I kept running into</h2>
+					<p>Every new session had a different idea of what to capture and where to put it. Sometimes Claude would deduplicate, sometimes not. Stale instructions layered in next to contradictory ones, and CLAUDE.md was getting large enough for context poisoning &mdash; the instructions were starting to make things <em>less</em> effective rather than more. I started extracting parts out into skills. Sometimes that was valuable, sometimes it was overkill. And writing good skills is a ... skill ... in itself.</p>
 
-			<p>I use Claude Code every day. Early on, I'd say things like "remember that" or "never do X" and Claude
-				would respond with "good call, I'll remember that for next time" &mdash; and then promptly forget. So I
-				started saying "write that down somewhere," then "write that down in CLAUDE.md." Over time, CLAUDE.md
-				filled up with a grab bag of instructions &mdash; coding standards, project conventions, things I'd
-				corrected more than once. Some stale, some project-specific, all piling up.</p>
+					<p>I wanted a memory system that wasn't overwhelming the context window, that automatically picked up on corrections and important patterns and things worth remembering.</p>
 
-			<p>Every new session had a different idea of what to capture and where to put it. Sometimes Claude would deduplicate, sometimes not. Stale instructions layered in next to contradictory ones, and CLAUDE.md was getting large enough for context poisoning &mdash; the instructions were starting to make things <em>less</em> effective rather than more. I started extracting parts out into skills. Sometimes that was valuable, sometimes it was overkill. And writing good skills is a ... skill ... in itself.</p>
+					<p>So that's what I built. Along the way I kept fixing problems through trial and error &mdash; adding features I thought were useful, pulling them back as the system got too complex. I'm still in that churn, but it's working well enough at this point that it felt like a decent time to share it.</p>
+				</div>
+			</div>
 
-			<p>I wanted a memory system that wasn't overwhelming the context window, that automatically picked up on corrections and important patterns and things worth remembering.</p>
+			<div class="article-section">
+				<h2>What I wanted</h2>
+				<div class="section-content reveal">
+					<p>Beyond the basics, I wanted it to be self-correcting &mdash; but keep the user in control. It should track what's working and what isn't, diagnose problems, and propose fixes. But never apply changes without asking first.</p>
 
-			<p>So that's what I built. Along the way I kept fixing problems through trial and error &mdash; adding features I thought were useful, pulling them back as the system got too complex. I'm still in that churn, but it's working well enough at this point that it felt like a decent time to share it.</p>
+					<p>Rewrite a confusing instruction. Broaden the keywords on a hidden gem. Remove noise. Escalate enforcement on something that keeps getting violated. All proposed, all reviewed by me before taking effect.</p>
 
-			<h2>What I wanted</h2>
+					<p class="callout">A closed feedback loop. Learn, measure, propose, fix. Repeat.</p>
+				</div>
+			</div>
 
-			<p>Beyond the basics, I wanted it to be self-correcting &mdash; but keep the user in control. It should track what's working and what isn't, diagnose problems, and propose fixes. But never apply changes without asking first.</p>
+			<div class="article-section">
+				<h2>What I have so far</h2>
+				<div class="section-content reveal">
+					<p><a href="https://github.com/toejough/engram">Engram</a> is a Claude Code plugin that hooks into every
+						phase of a session:</p>
 
-			<p>Rewrite a confusing instruction. Broaden the keywords on a hidden gem. Remove noise. Escalate enforcement on something that keeps getting violated. All proposed, all reviewed by me before taking effect.</p>
+					<ol>
+						<li><strong>Extract</strong> &mdash; learns from corrections and session transcripts, deduplicates
+							against what it already knows</li>
+						<li><strong>Surface</strong> &mdash; retrieves relevant memories at each prompt via keyword matching,
+							with a token budget so it doesn't overwhelm the model</li>
+						<li><strong>Evaluate</strong> &mdash; tracks whether surfaced memories were followed, contradicted, or
+							ignored</li>
+						<li><strong>Maintain</strong> &mdash; diagnoses each memory by effectiveness and proposes targeted fixes
+						</li>
+					</ol>
 
-			<p>A closed feedback loop. Learn, measure, propose, fix. Repeat.</p>
+					<p>Every memory gets classified into one of four quadrants based on how often it surfaces and how often it's
+						followed:</p>
 
-			<h2>What I have so far</h2>
+					<table>
+						<tr>
+							<th></th>
+							<th>High effectiveness</th>
+							<th>Low effectiveness</th>
+						</tr>
+						<tr>
+							<td><strong>Often surfaced</strong></td>
+							<td>Working &mdash; keep</td>
+							<td>Leech &mdash; rewrite or escalate</td>
+						</tr>
+						<tr>
+							<td><strong>Rarely surfaced</strong></td>
+							<td>Hidden gem &mdash; broaden keywords</td>
+							<td>Noise &mdash; remove</td>
+						</tr>
+					</table>
 
-			<p><a href="https://github.com/toejough/engram">Engram</a> is a Claude Code plugin that hooks into every
-				phase of a session:</p>
+					<p>The system also proposes its own improvements. When it notices that a keyword like "toml" causes
+						irrelevant matches 93% of the time, it proposes de-prioritizing that keyword for future extractions.
+						When it finds near-duplicate memories, it proposes consolidating them. All proposals go through user
+						review before taking effect.</p>
+				</div>
+			</div>
 
-			<ol>
-				<li><strong>Extract</strong> &mdash; learns from corrections and session transcripts, deduplicates
-					against what it already knows</li>
-				<li><strong>Surface</strong> &mdash; retrieves relevant memories at each prompt via keyword matching,
-					with a token budget so it doesn't overwhelm the model</li>
-				<li><strong>Evaluate</strong> &mdash; tracks whether surfaced memories were followed, contradicted, or
-					ignored</li>
-				<li><strong>Maintain</strong> &mdash; diagnoses each memory by effectiveness and proposes targeted fixes
-				</li>
-			</ol>
+			<div class="article-section">
+				<h2>What it's like to use</h2>
+				<div class="section-content reveal">
+					<p>In practice, I start a session and engram reminds me I can say <code>/recall</code> to load context from
+						my last session. When I type a prompt, relevant memories surface inline. When the agent finishes, I get
+						a quick triage summary if there are maintenance signals.</p>
 
-			<p>Every memory gets classified into one of four quadrants based on how often it surfaces and how often it's
-				followed:</p>
+					<p>Periodically I run <code>/memory-triage</code> and spend a few minutes reviewing what engram has found:
+						"these 6 memories are noise &mdash; remove all?", "this memory has 100% effectiveness but only surfaced
+						twice &mdash; broaden keywords?". It takes a few minutes and the corpus gets noticeably better each
+						time.</p>
 
-			<table>
-				<tr>
-					<th></th>
-					<th>High effectiveness</th>
-					<th>Low effectiveness</th>
-				</tr>
-				<tr>
-					<td><strong>Often surfaced</strong></td>
-					<td>Working &mdash; keep</td>
-					<td>Leech &mdash; rewrite or escalate</td>
-				</tr>
-				<tr>
-					<td><strong>Rarely surfaced</strong></td>
-					<td>Hidden gem &mdash; broaden keywords</td>
-					<td>Noise &mdash; remove</td>
-				</tr>
-			</table>
+					<p>My favorite part is the adaptation pipeline. Engram watches its own feedback patterns and
+						proposes system-level tuning &mdash; not just "fix this memory" but "stop using this keyword for
+						extraction because it causes too many false positives." The system is learning how to learn better.</p>
+				</div>
+			</div>
 
-			<p>The system also proposes its own improvements. When it notices that a keyword like "toml" causes
-				irrelevant matches 93% of the time, it proposes de-prioritizing that keyword for future extractions.
-				When it finds near-duplicate memories, it proposes consolidating them. All proposals go through user
-				review before taking effect.</p>
+			<div class="article-section">
+				<h2>What about built-in memory?</h2>
+				<div class="section-content reveal">
+					<p>Anthropic has introduced built-in auto-memory and dreaming features for Claude Code. Memory is definitely one of the primary problems that needs solving, and lots of smart people are working on it.</p>
 
-			<h2>What it's like to use</h2>
+					<p>I tried auto-memory when it was introduced and found it unhelpful for the same reasons I'd had trouble with "please write this down somewhere" &mdash; non-deterministic recording, unreliable surfacing. I ended up turning it off because it was conflicting with engram. I haven't tried the new dreaming features yet &mdash; maybe they've materially improved things.</p>
 
-			<p>In practice, I start a session and engram reminds me I can say <code>/recall</code> to load context from
-				my last session. When I type a prompt, relevant memories surface inline. When the agent finishes, I get
-				a quick triage summary if there are maintenance signals.</p>
+					<p>If the built-in memory management becomes good enough that most of engram is unnecessary, I'll be glad &mdash; less for me to maintain. Till then, I'm going to keep plugging away at this.</p>
+				</div>
+			</div>
 
-			<p>Periodically I run <code>/memory-triage</code> and spend a few minutes reviewing what engram has found:
-				"these 6 memories are noise &mdash; remove all?", "this memory has 100% effectiveness but only surfaced
-				twice &mdash; broaden keywords?". It takes a few minutes and the corpus gets noticeably better each
-				time.</p>
+			<div class="article-section">
+				<h2>Where it's at</h2>
+				<div class="section-content reveal">
+					<p>Engram is alpha. I've been using it daily for a few weeks and it's been genuinely useful, but APIs and
+						data formats may still change. It's written in pure Go with no CGO dependencies, uses TF-IDF and BM25
+						for text matching, and calls the Anthropic API only for LLM-dependent operations like classification and
+						extraction.</p>
 
-			<p>My favorite part is the adaptation pipeline. Engram watches its own feedback patterns and
-				proposes system-level tuning &mdash; not just "fix this memory" but "stop using this keyword for
-				extraction because it causes too many false positives." The system is learning how to learn better.</p>
+					<p>The whole thing is open source: <a
+							href="https://github.com/toejough/engram">github.com/toejough/engram</a></p>
 
-			<h2>What about built-in memory?</h2>
+					<p>If you use Claude Code and have opinions about how memory should work for LLM agents, I'd love to hear
+						from you. <a href="https://github.com/toejough/engram/issues">Issues</a> and feedback are welcome.</p>
+				</div>
+			</div>
+		</article>
 
-			<p>Anthropic has introduced built-in auto-memory and dreaming features for Claude Code. Memory is definitely one of the primary problems that needs solving, and lots of smart people are working on it.</p>
-
-			<p>I tried auto-memory when it was introduced and found it unhelpful for the same reasons I'd had trouble with "please write this down somewhere" &mdash; non-deterministic recording, unreliable surfacing. I ended up turning it off because it was conflicting with engram. I haven't tried the new dreaming features yet &mdash; maybe they've materially improved things.</p>
-
-			<p>If the built-in memory management becomes good enough that most of engram is unnecessary, I'll be glad &mdash; less for me to maintain. Till then, I'm going to keep plugging away at this.</p>
-
-			<h2>Where it's at</h2>
-
-			<p>Engram is alpha. I've been using it daily for a few weeks and it's been genuinely useful, but APIs and
-				data formats may still change. It's written in pure Go with no CGO dependencies, uses TF-IDF and BM25
-				for text matching, and calls the Anthropic API only for LLM-dependent operations like classification and
-				extraction.</p>
-
-			<p>The whole thing is open source: <a
-					href="https://github.com/toejough/engram">github.com/toejough/engram</a></p>
-
-			<p>If you use Claude Code and have opinions about how memory should work for LLM agents, I'd love to hear
-				from you. <a href="https://github.com/toejough/engram/issues">Issues</a> and feedback are welcome.</p>
-
-		</section>
 		<footer>
 			<p><small>Hosted on GitHub Pages</small></p>
 		</footer>
 	</div>
+
+	<script>
+		// Measure article title height for sticky h2 offset
+		function setStickyOffsets() {
+			const root = document.documentElement;
+			const articleHeader = document.querySelector('.article-header');
+			root.style.setProperty('--article-title-h', `${articleHeader.offsetHeight}px`);
+		}
+
+		setStickyOffsets();
+		window.addEventListener('resize', setStickyOffsets);
+
+		// Scroll-triggered reveals
+		const observer = new IntersectionObserver((entries) => {
+			entries.forEach(entry => {
+				if (entry.isIntersecting) {
+					entry.target.style.transitionDelay = '0.1s';
+					entry.target.classList.add('visible');
+					observer.unobserve(entry.target);
+				}
+			});
+		}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+		document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+	</script>
 	<script src="javascripts/scale.fix.js"></script>
 </body>
 
