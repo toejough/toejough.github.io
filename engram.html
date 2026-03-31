@@ -601,21 +601,51 @@
 
 		document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-		// Aurora scroll — shift gradient blobs as user scrolls
+		// Aurora drift — velocity-based with inertia, speed cap, ramp up/down
 		const headerEl = document.querySelector('header');
+		let lastScroll = window.scrollY;
+		let velocity = 0;          // current smoothed velocity
+		let driftX1 = 0, driftY1 = 0, driftX2 = 0, driftY2 = 0;
+		const maxSpeed = 3;        // cap on velocity magnitude
+		const rampUp = 0.08;       // how fast velocity builds (0-1)
+		const rampDown = 0.97;     // how fast velocity decays per frame (0-1)
+
 		window.addEventListener('scroll', () => {
 			const s = window.scrollY;
-			// Teal blob drifts right and up as you scroll
-			const x1 = 20 + Math.sin(s * 0.003) * 15 + s * 0.02;
-			const y1 = 40 + Math.cos(s * 0.004) * 10 - s * 0.01;
-			// Magenta blob drifts left and down
-			const x2 = 80 - Math.sin(s * 0.002 + 1) * 12 - s * 0.015;
-			const y2 = 30 + Math.sin(s * 0.005) * 8 + s * 0.008;
+			const delta = s - lastScroll;
+			lastScroll = s;
+			// Blend toward target velocity with ramp-up
+			const target = Math.max(-maxSpeed, Math.min(maxSpeed, delta * 0.15));
+			velocity += (target - velocity) * rampUp;
+		}, { passive: true });
+
+		function animateAurora() {
+			// Apply velocity to drift positions
+			driftX1 += velocity * 0.4;
+			driftY1 -= velocity * 0.25;
+			driftX2 -= velocity * 0.3;
+			driftY2 += velocity * 0.2;
+
+			// Decay velocity (ramp down / inertia)
+			velocity *= rampDown;
+			// Stop jittering at tiny values
+			if (Math.abs(velocity) < 0.001) velocity = 0;
+
+			// Add gentle sinusoidal wobble so it never feels static
+			const t = Date.now() * 0.0003;
+			const x1 = 20 + driftX1 + Math.sin(t) * 3;
+			const y1 = 40 + driftY1 + Math.cos(t * 1.3) * 2;
+			const x2 = 80 + driftX2 + Math.sin(t * 0.7 + 1) * 2.5;
+			const y2 = 30 + driftY2 + Math.sin(t * 1.1) * 1.5;
+
 			headerEl.style.setProperty('--aurora-x1', `${x1}%`);
 			headerEl.style.setProperty('--aurora-y1', `${y1}%`);
 			headerEl.style.setProperty('--aurora-x2', `${x2}%`);
 			headerEl.style.setProperty('--aurora-y2', `${y2}%`);
-		}, { passive: true });
+
+			requestAnimationFrame(animateAurora);
+		}
+		requestAnimationFrame(animateAurora);
 	</script>
 	<script src="javascripts/scale.fix.js"></script>
 </body>
