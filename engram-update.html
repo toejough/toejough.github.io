@@ -198,7 +198,7 @@
 
 		.article-section h2 {
 			position: sticky;
-			z-index: 80;
+			z-index: 160;
 			top: var(--header-h, 0px);
 			color: var(--teal);
 			font-size: 22px;
@@ -501,8 +501,9 @@
 			root.style.setProperty('--hero-content-h', `${contentH}px`);
 			root.style.setProperty('--hero-bottom-pad', `${bottomPad}px`);
 
-			// h2 sticks right at the bottom of the covered hero band.
-			root.style.setProperty('--header-h', `${contentH + bottomPad}px`);
+			// h2 sticks right at the bottom of the visible gradient (not below
+			// the covered-padding strip, which reads as an odd black bar).
+			root.style.setProperty('--header-h', `${contentH}px`);
 		}
 
 		setStickyOffsets();
