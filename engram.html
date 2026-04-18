@@ -72,6 +72,12 @@
 			z-index: 100;
 			/* top set by JS: -(top padding) so content hits top then freezes */
 			padding: 80px 40px 60px;
+			/* Scroll-driven shrink of the hero's bottom padding. Modern browsers
+			   (Chrome 115+, Safari 26+) animate padding down to 16px as the user
+			   scrolls the first 150px; older browsers keep the fat hero statically. */
+			animation: hero-shrink linear both;
+			animation-timeline: scroll();
+			animation-range: 0 150px;
 			border-bottom: none;
 			background:
 				radial-gradient(ellipse 80% 60% at var(--aurora-x1, 20%) var(--aurora-y1, 40%), var(--teal-dim) 0%, transparent 70%),
@@ -109,6 +115,10 @@
 		@keyframes meshDrift {
 			0% { transform: translate(0, 0) rotate(0deg); }
 			100% { transform: translate(3%, -2%) rotate(3deg); }
+		}
+
+		@keyframes hero-shrink {
+			to { padding-bottom: 16px; }
 		}
 
 		header h1 {
