@@ -177,6 +177,12 @@
 			right: -9999px;
 			height: var(--hero-bottom-pad, 60px);
 			background: var(--bg-deep);
+			opacity: 0;
+			transition: opacity 0.1s linear;
+		}
+
+		.hero-cover.stuck::before {
+			opacity: 1;
 		}
 
 		.article-header h1 {
@@ -508,6 +514,20 @@
 
 		setStickyOffsets();
 		window.addEventListener('resize', setStickyOffsets);
+
+		// Toggle .stuck on hero-cover when its sticky threshold is reached, so
+		// the bg-deep strip only shows while it's actively covering the hero's
+		// bottom padding (not below it in normal flow, where it would occlude
+		// the article-header title at scroll=0).
+		const heroCover = document.querySelector('.hero-cover');
+		function updateHeroCoverStuck() {
+			const rect = heroCover.getBoundingClientRect();
+			const target = parseFloat(getComputedStyle(heroCover).top);
+			heroCover.classList.toggle('stuck', rect.top <= target + 0.5);
+		}
+		updateHeroCoverStuck();
+		window.addEventListener('scroll', updateHeroCoverStuck, { passive: true });
+		window.addEventListener('resize', updateHeroCoverStuck);
 
 		const observer = new IntersectionObserver((entries) => {
 			entries.forEach(entry => {
