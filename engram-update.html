@@ -32,7 +32,8 @@
 			--text-dim: #777788;
 			--border: #2a2a38;
 			--header-h: 0px;
-			--article-title-h: 0px;
+			--hero-content-h: 0px;
+			--hero-bottom-pad: 60px;
 		}
 
 		* { box-sizing: border-box; }
@@ -153,20 +154,29 @@
 		}
 
 		.article-header {
-			position: sticky;
-			top: var(--header-h, 0px);
-			z-index: 200;
 			padding: 8px 0 12px;
 			background: transparent;
 		}
 
-		.article-header::before {
+		/* Empty sticky strip that covers the hero's bottom padding as you scroll,
+		   creating the "hero collapse" effect. Zero height in layout; its ::before
+		   extends downward 60px (the hero's bottom padding) with bg-deep. */
+		.hero-cover {
+			position: sticky;
+			top: var(--hero-content-h, 0px);
+			height: 0;
+			z-index: 150;
+			pointer-events: none;
+		}
+
+		.hero-cover::before {
 			content: "";
 			position: absolute;
-			top: 0; bottom: 0;
-			left: -9999px; right: -9999px;
+			top: 0;
+			left: -9999px;
+			right: -9999px;
+			height: var(--hero-bottom-pad, 60px);
 			background: var(--bg-deep);
-			z-index: -1;
 		}
 
 		.article-header h1 {
@@ -189,7 +199,7 @@
 		.article-section h2 {
 			position: sticky;
 			z-index: 80;
-			top: calc(var(--header-h, 0px) + var(--article-title-h));
+			top: var(--header-h, 0px);
 			color: var(--teal);
 			font-size: 22px;
 			margin: 0 -40px;
@@ -352,6 +362,7 @@
 		</header>
 
 		<article>
+			<div class="hero-cover"></div>
 			<div class="article-header">
 				<h1>Engram, a month later: what I built, what I tore out, and what's left</h1>
 				<p class="dateline">April 2026</p>
@@ -477,16 +488,21 @@
 		function setStickyOffsets() {
 			const root = document.documentElement;
 			const header = document.querySelector('header');
-			const articleHeader = document.querySelector('.article-header');
 
 			const style = getComputedStyle(header);
 			const topPad = parseFloat(style.paddingTop);
 			const bottomPad = parseFloat(style.paddingBottom);
 			header.style.top = `-${topPad}px`;
 
-			const visibleH = header.offsetHeight - topPad - bottomPad;
-			root.style.setProperty('--header-h', `${visibleH}px`);
-			root.style.setProperty('--article-title-h', `${articleHeader.offsetHeight}px`);
+			// Where the hero's content ends (and its bottom padding begins).
+			// The hero-cover sticky strip anchors here; its ::before fills the
+			// 60px padding band below, creating the collapse effect.
+			const contentH = header.offsetHeight - topPad - bottomPad;
+			root.style.setProperty('--hero-content-h', `${contentH}px`);
+			root.style.setProperty('--hero-bottom-pad', `${bottomPad}px`);
+
+			// h2 sticks right at the bottom of the covered hero band.
+			root.style.setProperty('--header-h', `${contentH + bottomPad}px`);
 		}
 
 		setStickyOffsets();
