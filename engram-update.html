@@ -67,7 +67,14 @@
 			float: none;
 			position: sticky;
 			z-index: 100;
-			padding: 80px 40px 24px;
+			padding: 80px 40px 60px;
+			/* Scroll-driven shrink of the hero's bottom padding. Modern browsers
+			   (Chrome 115+, Safari 26+, Firefox 148+) animate the padding down to
+			   16px as the user scrolls the first 150px; older browsers keep the
+			   fat hero statically. */
+			animation: hero-shrink linear both;
+			animation-timeline: scroll();
+			animation-range: 0 150px;
 			border-bottom: none;
 			background:
 				radial-gradient(ellipse 80% 60% at var(--aurora-x1, 20%) var(--aurora-y1, 40%), var(--teal-dim) 0%, transparent 70%),
@@ -105,6 +112,10 @@
 		@keyframes meshDrift {
 			0% { transform: translate(0, 0) rotate(0deg); }
 			100% { transform: translate(3%, -2%) rotate(3deg); }
+		}
+
+		@keyframes hero-shrink {
+			to { padding-bottom: 16px; }
 		}
 
 		header h1 {
@@ -301,7 +312,7 @@
 		}
 
 		@media screen and (max-width: 720px) {
-			header { padding: 48px 24px 16px; }
+			header { padding: 48px 24px 36px; }
 			header h1 { font-size: 36px; }
 			article { padding: 0 24px; }
 			.article-header { padding: 24px 0 16px; }
@@ -467,10 +478,17 @@
 
 			const style = getComputedStyle(header);
 			const topPad = parseFloat(style.paddingTop);
+			const bottomPad = parseFloat(style.paddingBottom);
 			header.style.top = `-${topPad}px`;
 
-			// h2 sticks right at the bottom of the visible (frozen) hero.
-			root.style.setProperty('--header-h', `${header.offsetHeight - topPad}px`);
+			// The hero's bottom padding animates from its initial value down to
+			// 16px via scroll-timeline (see the .hero-shrink keyframes). After
+			// the animation completes, the visible hero is contentH + 16. If the
+			// browser doesn't support scroll-timeline, the animation no-ops and
+			// the hero stays fat, so h2 should stick at the full visible hero.
+			const supportsScrollTimeline = CSS.supports('animation-timeline', 'scroll()');
+			const finalBottomPad = supportsScrollTimeline ? 16 : bottomPad;
+			root.style.setProperty('--header-h', `${header.offsetHeight - topPad - bottomPad + finalBottomPad}px`);
 		}
 
 		setStickyOffsets();
