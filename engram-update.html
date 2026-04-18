@@ -32,8 +32,6 @@
 			--text-dim: #777788;
 			--border: #2a2a38;
 			--header-h: 0px;
-			--hero-content-h: 0px;
-			--hero-bottom-pad: 60px;
 		}
 
 		* { box-sizing: border-box; }
@@ -69,7 +67,7 @@
 			float: none;
 			position: sticky;
 			z-index: 100;
-			padding: 80px 40px 60px;
+			padding: 80px 40px 24px;
 			border-bottom: none;
 			background:
 				radial-gradient(ellipse 80% 60% at var(--aurora-x1, 20%) var(--aurora-y1, 40%), var(--teal-dim) 0%, transparent 70%),
@@ -158,34 +156,7 @@
 			background: transparent;
 		}
 
-		/* Empty sticky strip that covers the hero's bottom padding as you scroll,
-		   creating the "hero collapse" effect. Zero height in layout; its ::before
-		   extends downward 60px (the hero's bottom padding) with bg-deep. */
-		.hero-cover {
-			position: sticky;
-			top: var(--hero-content-h, 0px);
-			height: 0;
-			z-index: 150;
-			pointer-events: none;
-		}
-
-		.hero-cover::before {
-			content: "";
-			position: absolute;
-			top: 0;
-			left: -9999px;
-			right: -9999px;
-			height: var(--hero-bottom-pad, 60px);
-			background: var(--bg-deep);
-			opacity: 0;
-			transition: opacity 0.1s linear;
-		}
-
-		.hero-cover.stuck::before {
-			opacity: 1;
-		}
-
-		.article-header h1 {
+.article-header h1 {
 			color: var(--text-bright);
 			font-size: 32px;
 			margin-bottom: 2px;
@@ -204,7 +175,7 @@
 
 		.article-section h2 {
 			position: sticky;
-			z-index: 160;
+			z-index: 80;
 			top: var(--header-h, 0px);
 			color: var(--teal);
 			font-size: 22px;
@@ -330,7 +301,7 @@
 		}
 
 		@media screen and (max-width: 720px) {
-			header { padding: 48px 24px 36px; }
+			header { padding: 48px 24px 16px; }
 			header h1 { font-size: 36px; }
 			article { padding: 0 24px; }
 			.article-header { padding: 24px 0 16px; }
@@ -368,7 +339,6 @@
 		</header>
 
 		<article>
-			<div class="hero-cover"></div>
 			<div class="article-header">
 				<h1>Engram, a month later: what I built, what I tore out, and what's left</h1>
 				<p class="dateline">April 2026</p>
@@ -497,37 +467,14 @@
 
 			const style = getComputedStyle(header);
 			const topPad = parseFloat(style.paddingTop);
-			const bottomPad = parseFloat(style.paddingBottom);
 			header.style.top = `-${topPad}px`;
 
-			// Where the hero's content ends (and its bottom padding begins).
-			// The hero-cover sticky strip anchors here; its ::before fills the
-			// 60px padding band below, creating the collapse effect.
-			const contentH = header.offsetHeight - topPad - bottomPad;
-			root.style.setProperty('--hero-content-h', `${contentH}px`);
-			root.style.setProperty('--hero-bottom-pad', `${bottomPad}px`);
-
-			// h2 sticks right at the bottom of the visible gradient (not below
-			// the covered-padding strip, which reads as an odd black bar).
-			root.style.setProperty('--header-h', `${contentH}px`);
+			// h2 sticks right at the bottom of the visible (frozen) hero.
+			root.style.setProperty('--header-h', `${header.offsetHeight - topPad}px`);
 		}
 
 		setStickyOffsets();
 		window.addEventListener('resize', setStickyOffsets);
-
-		// Toggle .stuck on hero-cover when its sticky threshold is reached, so
-		// the bg-deep strip only shows while it's actively covering the hero's
-		// bottom padding (not below it in normal flow, where it would occlude
-		// the article-header title at scroll=0).
-		const heroCover = document.querySelector('.hero-cover');
-		function updateHeroCoverStuck() {
-			const rect = heroCover.getBoundingClientRect();
-			const target = parseFloat(getComputedStyle(heroCover).top);
-			heroCover.classList.toggle('stuck', rect.top <= target + 0.5);
-		}
-		updateHeroCoverStuck();
-		window.addEventListener('scroll', updateHeroCoverStuck, { passive: true });
-		window.addEventListener('resize', updateHeroCoverStuck);
 
 		const observer = new IntersectionObserver((entries) => {
 			entries.forEach(entry => {
